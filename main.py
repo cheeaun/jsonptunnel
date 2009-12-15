@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import re
 import cgi
 import urllib
 import logging
@@ -14,6 +15,7 @@ class MainHandler(webapp.RequestHandler):
     extMethod = cgi.escape(self.request.get('extMethod'))
     queryString = cgi.escape(self.request.query_string)
     queryDict = dict(cgi.parse_qsl(queryString)) 
+    callback = cgi.escape(self.request.get('_callback'))
     
     if queryString:
       error = 1
@@ -32,10 +34,16 @@ class MainHandler(webapp.RequestHandler):
         try:
           data = urllib.urlencode(queryDict)
           result = urlfetch.fetch(extURL, method=method, payload=data)
-          if result.status_code == 200:
+          if result.status_code == 200 or result.status_code == 201:
             error = 0
             self.response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-            self.response.out.write(result.content)
+            content = result.content
+            if callback:
+              logging.info('Adding callback to JSON')
+              exp = re.compile('^[A-Za-z_$][A-Za-z0-9._$]*?$')
+              match = exp.match(callback)
+              if match: content = callback + '(' + content + ')'
+            self.response.out.write(content)
         except urlfetch.Error:
           logging.error('urlfetch error')
           error = 1
