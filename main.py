@@ -42,7 +42,7 @@ class MainHandler(webapp.RequestHandler):
               logging.info('Adding callback to JSON')
               exp = re.compile('^[A-Za-z_$][A-Za-z0-9._$]*?$')
               match = exp.match(callback)
-              if match: content = callback + '(' + content + ')'
+              if match: content = callback + '(' + content.decode('utf-8') + ')'
             self.response.out.write(content)
         except urlfetch.Error:
           logging.error('urlfetch error')
